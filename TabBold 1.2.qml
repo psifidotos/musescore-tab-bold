@@ -37,13 +37,13 @@ MuseScore
    property var pXorg: 0.75 // X origin
    property var pYorg: -0.6 // Y origin
    property var smAll: 0.7 // Small note factor
-   
+
 // =============================================================
 //
 //                       Parameter Defaults
 //
 // =============================================================
-  
+
    property var pXoff: 0; // text X-Offset
    property var pYoff: 0; // text Y-Offset
    property var pYspc: 1.5 // string spacing
@@ -51,13 +51,13 @@ MuseScore
    property var pFont: ""; // font face
    property var sSize: 0.0 // small font size
    property var sYoff: 0.0 // small Y-Offset
-   
+
 // =============================================================
 
    onRun: {}
 
    function undoBold() { cmd("undo"); }
-   
+
    function setBold()
    {
       if(isNaN(txtSize.text))
@@ -84,7 +84,7 @@ MuseScore
          pYspc = 1.5
       else
          pYspc = 1 * txtYspc.text;
-         
+
       pVox = txtVox.currentIndex;
       pFont = txtFont.currentText;
       sSize = smAll * pSize;
@@ -128,22 +128,32 @@ MuseScore
                for (var ii = 0; ii < notes.length; ii++) {
                   if(notes[ii].visible) {
                      var txt = newElement(Element.STAFF_TEXT);
-                     txt.text = notes[ii].fret;
+                     var tOffsetY = 0;
+
+                     // the note is using Cross head type OR the note is MUTED
+                     if (notes[ii].headGroup === NoteHeadGroup.CROSS || notes[ii].play === false) {
+                        txt.text = "x";
+                        tOffsetY = 0.2;
+                     } else {
+                        txt.text = notes[ii].fret;
+                     }
                      txt.color = "#000000";
                      txt.placement = Placement.ABOVE;
                      txt.align = 2; // LEFT = 0, RIGHT = 1, HCENTER = 2, TOP = 0, BOTTOM = 4, VCENTER = 8, BASELINE = 16
                      txt.fontFace = pFont;
+
                      txt.offsetX = pXoff;
                      if (notes[ii].small) {
-                        txt.offsetY = pYspc * notes[ii].string + sYoff;
+                        txt.offsetY = pYspc * notes[ii].string + sYoff + tOffsetY;
                         txt.fontSize = sSize;
                      }
                      else {
-                        txt.offsetY = pYspc * notes[ii].string + pYoff;
+                        txt.offsetY = pYspc * notes[ii].string + pYoff + tOffsetY;
                         txt.fontSize = pSize;
                      }
                      txt.fontStyle = 1;
                      txt.autoplace = false;
+
                      notes[ii].color = "#FFFFFF";
                      cursor.add(txt);
                   }
@@ -168,16 +178,16 @@ MuseScore
          var seg = mez.firstSegment;
          while (seg) {
             if (seg.annotations && seg.annotations.length) {
-               nn = seg.annotations.length - 1; // to remove in reverse order
-               for (var aa in seg.annotations) {
-                  var anno = seg.annotations[nn-aa];
-                  if (anno.type == Element.STAFF_TEXT) { // STAFF TEXT
-                     if(!isNaN(anno.text) && anno.text.substr(0,1)!=" " && anno.fontStyle == 1) { // number, no leading space, bold
-                        valu = parseInt(anno.text);
-                        if (valu>=0 && valu<=30) removeElement(anno);
-                     }
-                  }
-               }
+                for (var i = seg.annotations.length - 1; i >= 0; i--) {
+                    var anno = seg.annotations[i];
+                    if (anno.type == Element.STAFF_TEXT) {
+                        if (!isNaN(anno.text) && anno.text.substr(0, 1) != " " && anno.fontStyle == 1) {
+                            var valu = parseInt(anno.text);
+                            if (valu >= 0 && valu <= 30) removeElement(anno);
+                        }
+                        if (anno.text == "x") removeElement(anno);
+                    }
+                }
             }
             for (vv = 0; vv < curScore.ntracks; ++vv) {
                var elm = seg.elementAt(vv);
@@ -211,7 +221,7 @@ MuseScore
    }
 
    GridLayout { id: winUI
-   
+
       anchors.fill: parent
       anchors.margins: 10
       columns: 3
