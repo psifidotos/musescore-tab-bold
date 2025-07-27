@@ -31,19 +31,19 @@ MuseScore
    requiresScore: true;
    version: "1.2";
    menuPath: "Plugins.TAB Bold";
-   pluginType: "dialog";
+   pluginType: "dock"; //original had "dialog"
 
    property var pSize: 9.0; // fret font size
    property var pXorg: 0.75 // X origin
    property var pYorg: -0.6 // Y origin
    property var smAll: 0.7 // Small note factor
-
+   
 // =============================================================
 //
 //                       Parameter Defaults
 //
 // =============================================================
-
+  
    property var pXoff: 0; // text X-Offset
    property var pYoff: 0; // text Y-Offset
    property var pYspc: 1.5 // string spacing
@@ -51,13 +51,13 @@ MuseScore
    property var pFont: ""; // font face
    property var sSize: 0.0 // small font size
    property var sYoff: 0.0 // small Y-Offset
-
+   
 // =============================================================
 
    onRun: {}
 
    function undoBold() { cmd("undo"); }
-
+   
    function setBold()
    {
       if(isNaN(txtSize.text))
@@ -84,7 +84,7 @@ MuseScore
          pYspc = 1.5
       else
          pYspc = 1 * txtYspc.text;
-
+         
       pVox = txtVox.currentIndex;
       pFont = txtFont.currentText;
       sSize = smAll * pSize;
@@ -124,6 +124,7 @@ MuseScore
       while (cursor.segment && (toEOF || cursor.tick < tickEnd)) {
          if(cursor.element) {
             if(cursor.element.type == Element.CHORD) {
+               // Regular Notes
                var notes = cursor.element.notes;
                for (var ii = 0; ii < notes.length; ii++) {
                   if(notes[ii].visible) {
@@ -158,6 +159,59 @@ MuseScore
                      cursor.add(txt);
                   }
                }
+
+               // --- Grace notes ---
+               var gNotes = cursor.element.graceNotes;
+               if (gNotes && gNotes.length > 0) {
+                  for (var g = 0; g < gNotes.length; g++) {
+                     var gChord = gNotes[g];
+                     if (!gChord.notes)
+                        continue;
+
+                     for (var j = 0; j < gChord.notes.length; j++) {
+                        var gNote = gChord.notes[j];
+                        if (gNote.visible) {
+                           var gTxt = newElement(Element.STAFF_TEXT);
+                           var gOffsetY = 0;
+
+                           if (gNote.headGroup === NoteHeadGroup.CROSS || gNote.play === false) {
+                              gTxt.text = "x";
+                              gOffsetY = 0.2;
+                           } else {
+                              gTxt.text = gNote.fret;
+                           }
+                           console.log(gTxt.text);
+
+                           gTxt.color = "#000000";
+                           gTxt.placement = Placement.ABOVE;
+                           gTxt.align = 1;
+                           gTxt.fontFace = pFont;
+
+                           gTxt.offsetX = pXoff;
+                           if (gNote.small) {
+                              gTxt.offsetY = pYspc * gNote.string + sYoff + gOffsetY;
+                              gTxt.fontSize = sSize;
+                           } else {
+                              gTxt.offsetY = pYspc * gNote.string + pYoff + gOffsetY;
+                              gTxt.fontSize = pSize;
+                           }
+
+                           gTxt.offsetX += txtGXoff.text / 1;
+                           gTxt.offsetY += txtGYoff.text / 1;
+                           gTxt.fontSize -= 2.0;
+
+                           gTxt.fontStyle = 1;
+                           gTxt.autoplace = false;
+
+                           gNote.color = "#FFFFFF";
+                           cursor.add(gTxt);
+                          // var targetTick = gChord.tick || cursor.tick;
+                          // curScore.addElement(gTxt, targetTick, cursor.staffIdx); // cursor.add() doesn't work for grace notes*/
+                        }
+                     }
+                  }
+               }
+
             }
             cursor.next();
          }
@@ -192,10 +246,26 @@ MuseScore
             for (vv = 0; vv < curScore.ntracks; ++vv) {
                var elm = seg.elementAt(vv);
                if (elm) {
-                  if (elm.type == Element.CHORD) { // CHORD
+                  if (elm.type == Element.CHORD) {
                      for (nn in elm.notes) {
                         elm.notes[nn].color = "#000000";
                      }
+
+                     // --- Also handle grace notes ---
+                     if (elm.graceNotes && elm.graceNotes.length > 0) {
+                        for (var g = 0; g < elm.graceNotes.length; g++) {
+                           var gChord = elm.graceNotes[g];
+                           if (!gChord.notes)
+                              continue;
+
+                           for (var j = 0; j < gChord.notes.length; j++) {
+                              var gNote = gChord.notes[j];
+                              gNote.color = "#000000";
+                              gNote.small = false; // restore grace note appearance
+                           }
+                        }
+                     }
+
                   }
                }
             }
@@ -211,7 +281,7 @@ MuseScore
 // =============================================================
 
    width:  220;
-   height: 230;
+   height: 370;
 
    Label { id: pluginVer
       x:195; y:3
@@ -221,7 +291,7 @@ MuseScore
    }
 
    GridLayout { id: winUI
-
+   
       anchors.fill: parent
       anchors.margins: 10
       columns: 3
@@ -310,6 +380,36 @@ MuseScore
       Label { id: lblSpc2 // spacer
          visible: true
          text: "-50  to +50 "
+      }
+      Label { id: lblGXoff
+         visible : true
+         text: "Grace-X-Offset"
+      }
+      TextField { id: txtGXoff
+         visible: true
+         enabled: true
+         Layout.preferredWidth: 50
+         Layout.preferredHeight: 25
+         text: "0"
+      }
+      Label { id: lblGXSpc1 // spacer
+         visible: true
+         text: "e.g. -2.55"
+      }
+      Label { id: lblGYoff
+         visible : true
+         text: "Grace-Y-Offset"
+      }
+      TextField { id: txtGYoff
+         visible: true
+         enabled: true
+         Layout.preferredWidth: 50
+         Layout.preferredHeight: 25
+         text: "0"
+      }
+      Label { id: lblGYSpc1 // spacer
+         visible: true
+         text: "e.g. +0.35"
       }
       Label { id: lblVox
          visible : true
