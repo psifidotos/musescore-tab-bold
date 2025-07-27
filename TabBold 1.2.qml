@@ -180,7 +180,7 @@ MuseScore
                            } else {
                               gTxt.text = gNote.fret;
                            }
-                           console.log(gTxt.text);
+
 
                            gTxt.color = "#000000";
                            gTxt.placement = Placement.ABOVE;
@@ -196,8 +196,18 @@ MuseScore
                               gTxt.fontSize = pSize;
                            }
 
-                           gTxt.offsetX += txtGXoff.text / 1;
-                           gTxt.offsetY += txtGYoff.text / 1;
+                           console.log(gNote.fret + " " + gNote.autoplace + gNote.z);
+
+                           gTxt.offsetX -= 1.8;
+
+                           if (gNote.z != 4000 ){
+                              gTxt.offsetX += txtGXoff.text / 1;
+                           } else {
+                              //Offset to be used with grace notes that use z=4000, most often let them have increased space
+                              gTxt.offsetX += txtGX2off.text / 1;
+                           }
+
+                           gTxt.offsetY += (0.4+txtGYoff.text / 1);
                            gTxt.fontSize -= 2.0;
 
                            gTxt.fontStyle = 1;
@@ -394,7 +404,22 @@ MuseScore
       }
       Label { id: lblGXSpc1 // spacer
          visible: true
-         text: "e.g. -2.55"
+         text: "e.g. -0.6"
+      }
+      Label { id: lblGX2off
+         visible : true
+         text: "Grace-X-Inc-Offset"
+      }
+      TextField { id: txtGX2off
+         visible: true
+         enabled: true
+         Layout.preferredWidth: 50
+         Layout.preferredHeight: 25
+         text: "-0.9"
+      }
+      Label { id: lblGX2Spc1 // spacer
+         visible: true
+         text: "e.g. -0.9 for z=4000"
       }
       Label { id: lblGYoff
          visible : true
@@ -409,7 +434,7 @@ MuseScore
       }
       Label { id: lblGYSpc1 // spacer
          visible: true
-         text: "e.g. +0.35"
+         text: "e.g. +0.4"
       }
       Label { id: lblVox
          visible : true
