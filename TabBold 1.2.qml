@@ -33,6 +33,11 @@ MuseScore
    menuPath: "Plugins.TAB Bold";
    pluginType: "dock"; //original had "dialog"
 
+   //Notes in submelody and not in the main melody
+   readonly property int subMelZ: 3000
+   //Grace Notes with extended distance
+   readonly property int extGraceZ: 4000
+
    property var pSize: 9.0; // fret font size
    property var pXorg: 0.75 // X origin
    property var pYorg: -0.6 // Y origin
@@ -127,7 +132,7 @@ MuseScore
                // Regular Notes
                var notes = cursor.element.notes;
                for (var ii = 0; ii < notes.length; ii++) {
-                  if(notes[ii].visible) {
+                  if(notes[ii].visible && notes[ii].z != subMelZ) {
                      var txt = newElement(Element.STAFF_TEXT);
                      var tOffsetY = 0;
 
@@ -152,7 +157,8 @@ MuseScore
                         txt.offsetY = pYspc * notes[ii].string + pYoff + tOffsetY;
                         txt.fontSize = pSize;
                      }
-                     txt.fontStyle = 1;
+
+                     txt.fontStyle = 1; //bold
                      txt.autoplace = false;
 
                      notes[ii].color = "#FFFFFF";
@@ -200,7 +206,7 @@ MuseScore
 
                            gTxt.offsetX -= 1.8;
 
-                           if (gNote.z != 4000 ){
+                           if (gNote.z != extGraceZ ){
                               gTxt.offsetX += txtGXoff.text / 1;
                            } else {
                               //Offset to be used with grace notes that use z=4000, most often let them have increased space
